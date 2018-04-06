@@ -2,6 +2,9 @@
 var actorChars = {
   "@": Player,
   "o": Coin, // A coin will wobble up and down
+  "#": Portal,
+  "&": Ending,
+  "%": Booster,
   "=": Lava, "|": Lava, "v": Lava  
 };
 
@@ -17,6 +20,10 @@ function Level(plan) {
 
   // Store a list of actors to process each frame
   this.actors = [];
+
+  this.coinsCollected = 0;
+
+  this.boostAmount = 0;
 
   // Loop through each row in the plan, creating an array in our grid
   for (var y = 0; y < this.height; y++) {
@@ -88,6 +95,28 @@ function Coin(pos) {
   this.wobble = Math.random() * Math.PI * 2;
 }
 Coin.prototype.type = "coin";
+
+function Ending(pos) {
+  this.basePos = this.pos = pos.plus(new Vector(0, 0));
+  this.size = new Vector(0.6, 0.6);
+  // Make it go back and forth in a sine wave.
+  this.wobble = Math.random() * Math.PI * 2;
+}
+Ending.prototype.type = "ending";
+
+function Portal(pos) {
+  this.basePos = this.pos = pos.plus(new Vector(0, 0));
+  this.size = new Vector(1, 1);
+  // Make it go back and forth in a sine wave.
+  this.wobble = Math.random() * Math.PI * 2;
+}
+Portal.prototype.type = "portal";
+
+function Booster(pos) {
+  this.basePos = this.pos = pos.plus(new Vector(0, 0.9));
+  this.size = new Vector(2, 0.3);
+}
+Booster.prototype.type = "booster";
 
 // Lava is initialized based on the character, but otherwise has a
 // size and position
@@ -294,14 +323,24 @@ Coin.prototype.act = function(step) {
   this.pos = this.basePos.plus(new Vector(0, wobblePos));
 };
 
-var maxStep = 0.05;
+var endingWobbleSpeed = 4, endingWobbleDist = 0.2;
 
-var wobbleSpeed = 8, wobbleDist = 0.07;
+Ending.prototype.act = function(step) {
+  this.wobble += step * endingWobbleSpeed;
+  var wobblePos = Math.sin(this.wobble) * endingWobbleDist;
+  this.pos = this.basePos.plus(new Vector(wobblePos, 0));
+};
 
-Coin.prototype.act = function(step) {
-  this.wobble += step * wobbleSpeed;
-  var wobblePos = Math.sin(this.wobble) * wobbleDist;
-  this.pos = this.basePos.plus(new Vector(0, wobblePos));
+var portalWobbleSpeed = 4, portalWobbleDist = 0.2;
+
+Portal.prototype.act = function(step) {
+  this.wobble += step * portalWobbleSpeed;
+  var wobblePosX = Math.sin(this.wobble) * portalWobbleDist;
+  var wobblePosY = Math.cos(this.wobble) * portalWobbleDist;
+  this.pos = this.basePos.plus(new Vector(wobblePosX, -wobblePosY));
+};
+
+Booster.prototype.act = function(step) {
 };
 
 var maxStep = 0.05;
@@ -310,8 +349,8 @@ var playerXSpeed = 7;
 
 Player.prototype.moveX = function(step, level, keys) {
   this.speed.x = 0;
-  if (keys.left) this.speed.x -= playerXSpeed;
-  if (keys.right) this.speed.x += playerXSpeed;
+  if (keys.left) this.speed.x -= (playerXSpeed + (3 * level.boostAmount));
+  if (keys.right) this.speed.x += (playerXSpeed + (3 * level.boostAmount));
 
   var motion = new Vector(this.speed.x * step, 0);
   // Find out where the player character will be in this frame
@@ -340,7 +379,7 @@ Player.prototype.moveY = function(step, level, keys) {
   if (obstacle) {
     level.playerTouched(obstacle);
     if (keys.up && this.speed.y > 0)
-      this.speed.y = -jumpSpeed;
+      this.speed.y = -(jumpSpeed + (2 * level.boostAmount));
     else
       this.speed.y = 0;
   } else {
@@ -371,18 +410,27 @@ Level.prototype.playerTouched = function(type, actor) {
     this.status = "lost";
     this.finishDelay = 1;
   } else if (type == "coin") {
-    this.actors = this.actors.filter(function(other) {
-      return other != actor;
-    });
-    // If there aren't any coins left, player wins
-    if (!this.actors.some(function(actor) {
-           return actor.type == "coin";
-         })) {
-      this.status = "won";
-      this.finishDelay = 1;
-    }
+    this.actors = removeActor(this.actors, actor);
+    this.coinsCollected++;
+  } else if (type == "ending") {
+    this.status = "won";
+    this.finishDelay = 0.2;
+  } else if (type == "portal") {
+    player = this.actors.find(function(act) {
+      return act.type == "player";
+    })
+    player.pos.x -= 10;
+  } else if (type == "booster") {
+    this.actors = removeActor(this.actors, actor);
+    this.boostAmount++;
   }
 };
+
+function removeActor(actors, actor) {
+  return actors.filter(function(other) {
+    return other != actor;
+  });
+}
 
 // Arrow key codes for readibility
 var arrowCodes = {37: "left", 38: "up", 39: "right"};
