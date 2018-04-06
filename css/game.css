@@ -1,13 +1,27 @@
-.background    { background: rgb(52, 166, 251);
+.background    { background: rgb(26, 82, 202);
                  table-layout: fixed;
                  border-spacing: 0;   }
 .background td { padding: 0;          }
-.lava          { background: rgb(255, 100, 100); }
-.wall          { background: white;   }
+.lava          { background: rgb(255, 144, 100); }
+.wall          { background: rgb(37, 37, 37);   }
 
 .actor  { position: absolute;  }
-.coin   { background: rgb(241, 229, 89); }
-.player { background: rgb(64, 64, 64); }
+.portal {
+  background: rgb(169, 126, 250);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgb(211, 153, 245), 0 0 10px rgb(197, 167, 252);
+}
+.ending {
+  background: rgb(0, 255, 136);
+  box-shadow: 0 0 10px rgb(126, 247, 241), 0 0 10px rgb(126, 239, 247);
+}
+.coin   {
+  background: rgb(241, 229, 89);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgb(245, 247, 126);
+}
+.player { background: rgb(117, 117, 117); }
+.booster { background: rgb(255, 0, 221); }
 
 .game {
   overflow: hidden;
